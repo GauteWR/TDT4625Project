@@ -27,11 +27,10 @@ class BasicModel(torch.nn.Module):
             torch.nn.MaxPool2d(2,2), # 150x150 out
             torch.nn.Conv2d(32, 64, kernel_size=3, padding=1),
             torch.nn.ReLU(),
-            torch.nn.MaxPool2d(2,2), # 75 x 75 out
             torch.nn.Conv2d(64, 64, kernel_size=3, padding=1),
             torch.nn.ReLU(),
             # Use ceil mode to get 75/2 to ouput 38
-            torch.nn.Conv2d(64, output_channels[0], kernel_size=3, padding=1, stride=2),
+            torch.nn.Conv2d(64, output_channels[0], kernel_size=2, padding=1, stride=2),
             torch.nn.ReLU(),
         )
         self.additional_layers = torch.nn.ModuleList([
