@@ -21,6 +21,52 @@ class BasicModel(torch.nn.Module):
         self.out_channels = output_channels
         self.output_feature_shape = output_feature_sizes
 
+        self.feature_extractor = torch.nn.Sequential(
+            torch.nn.Conv2d(image_channels, 32, kernel_size=3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(2,2), # 150x150 out
+            torch.nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(2,2), # 75 x 75 out
+            torch.nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            torch.nn.ReLU(),
+            # Use ceil mode to get 75/2 to ouput 38
+            torch.nn.Conv2d(64, output_channels[0], kernel_size=3, padding=1, stride=2),
+            torch.nn.ReLU(),
+        )
+        self.additional_layers = torch.nn.ModuleList([
+            torch.nn.Sequential( # 19 x 19 out
+                torch.nn.Conv2d(output_channels[0], 128, kernel_size=3, padding=1),
+                torch.nn.ReLU(),
+                torch.nn.Conv2d(128, output_channels[1], kernel_size=3, padding=1, stride=2),
+                torch.nn.ReLU(),
+            ),
+            torch.nn.Sequential( # 10x10 out
+                torch.nn.Conv2d(output_channels[1], 256, kernel_size=3, padding=1),
+                torch.nn.ReLU(),
+                torch.nn.Conv2d(256, output_channels[2], kernel_size=3, padding=1, stride=2),
+                torch.nn.ReLU(),
+            ),
+            torch.nn.Sequential( # 5 x 5 out
+                torch.nn.Conv2d(output_channels[2], 128, kernel_size=3, padding=1),
+                torch.nn.ReLU(),
+                torch.nn.Conv2d(128, output_channels[3], kernel_size=3, padding=1, stride=2),
+                torch.nn.ReLU(),
+            ),
+            torch.nn.Sequential( # 3 x 3 out
+                torch.nn.Conv2d(output_channels[3], 128, kernel_size=3, padding=1),
+                torch.nn.ReLU(),
+                torch.nn.Conv2d(128, output_channels[4], kernel_size=3, stride=2, padding=1),
+                torch.nn.ReLU(),
+            ),
+            torch.nn.Sequential( # 1 x 1 out
+                torch.nn.Conv2d(output_channels[4], 128, kernel_size=3, padding=1),
+                torch.nn.ReLU(),
+                torch.nn.Conv2d(128, output_channels[5], kernel_size=3),
+                torch.nn.ReLU(),
+            ),
+        ])
+
     def forward(self, x):
         """
         The forward functiom should output features with shape:
@@ -34,7 +80,10 @@ class BasicModel(torch.nn.Module):
         where out_features[0] should have the shape:
             shape(-1, output_channels[0], 38, 38),
         """
-        out_features = []
+        out_features = [self.feature_extractor(x)]
+        for layer in self.additional_layers.children():
+            out_features.append(layer(x))
+
         for idx, feature in enumerate(out_features):
             out_channel = self.out_channels[idx]
             h, w = self.output_feature_shape[idx]
