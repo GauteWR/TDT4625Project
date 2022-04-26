@@ -191,9 +191,9 @@ def calculate_precision_recall_all_images(
         fp += res_dict["false_pos"]
         fn += res_dict["false_neg"]
 
-    precision = tp/(tp+fp)
-    recall = tp/(tp+fn)
-    return (precision, recall)
+    precision = calculate_precision(tp, fp, fn)
+    recall = calculate_recall(tp, fp, fn)
+    return precision, recall
 
 
 def get_precision_recall_curve(
@@ -222,31 +222,29 @@ def get_precision_recall_curve(
     Returns:
         precisions, recalls: two np.ndarray with same shape.
     """
+    print("We calling on the curve")
     confidence_thresholds = np.linspace(0, 1, 500)
     #print(confidence_thresholds)
     # YOUR CODE HERE
+
     precisions = [] 
     recalls = []
-    for ct in confidence_thresholds:
-        accepted_predictions = []
-        for i in range(len(all_prediction_boxes)):
-            list_to_append = []
-            for j in range(len(all_prediction_boxes[i])):
-                if confidence_scores[i][j] >= ct:
-                    # Add predictions with confidence scores over confidence threshold
-                    list_to_append.append(all_prediction_boxes[i][j])
-            if len(list_to_append) > 0:
-                accepted_predictions.append(list_to_append)
-        
-        #print(all_prediction_boxes)
-        #print(accepted_predictions)
-        print("np:\n", np.asarray(accepted_predictions))
-        precision, recall = calculate_precision_recall_all_images(np.asarray(accepted_predictions), all_gt_boxes, iou_threshold)            
+    for i in confidence_thresholds:
+        # print("Confidence curve index", i)
+        temp = []
+        for j in range(len(all_prediction_boxes)):
+            boxes = all_prediction_boxes[j]
+            scores = confidence_scores[j]
+            prune = []
+            for k in range(len(scores)):
+                if scores[k] >= i:
+                    prune.append(True)
+                else:
+                    prune.append(False)
+            temp.append(boxes[prune])
+        precision, recall = calculate_precision_recall_all_images(temp, all_gt_boxes, iou_threshold)
         precisions.append(precision)
         recalls.append(recall)
-    # We were rather unsure of how this was supposed to work, as np arrays are immutable (in terms of removing and adding elements after initialzation)
-    # and the fact that this didn't work
-    
     return np.array(precisions), np.array(recalls)
 
 
@@ -261,6 +259,7 @@ def plot_precision_recall_curve(precisions, recalls):
     Returns:
         None
     """
+    print("Plotting")
     plt.figure(figsize=(20, 20))
     plt.plot(recalls, precisions)
     plt.xlabel("Recall")
@@ -280,22 +279,18 @@ def calculate_mean_average_precision(precisions, recalls):
     Returns:
         float: mean average precision
     """
+    print("Mean avg")
     # Calculate the mean average precision given these recall levels.
     recall_levels = np.linspace(0, 1.0, 11)
-    interpolated_precisions = []
-    # YOUR CODE HERE
-    indeces = recalls.argsort()
-    sorted_precision = precisions[indeces]
-    sorted_recalls = recalls[indeces]
-
-    for i in range(len(sorted_precision)):
-        sorted_precision[i] = max(sorted_precision[i:])
-    
-    for rl in recall_levels:
-        interpolated_precisions.append(np.interp(rl, sorted_recalls, sorted_precision))
-    
-    ap = 1/len(recall_levels) * np.sum(interpolated_precisions)
-    
+    temp_precisions = []
+    for i in recall_levels:
+        precision = precisions[recalls >= i]
+        if precision.size == 0:
+            precision = 0
+        else:
+            precision = max(precision)
+        temp_precisions.append(precision)
+    ap = np.mean(temp_precisions)
     return ap
 
 
@@ -322,21 +317,27 @@ def mean_average_precision(ground_truth_boxes, predicted_boxes):
     confidence_scores = []
 
     for image_id in ground_truth_boxes.keys():
+        print("Inside image", image_id)
         pred_boxes = predicted_boxes[image_id]["boxes"]
         scores = predicted_boxes[image_id]["scores"]
 
         all_gt_boxes.append(ground_truth_boxes[image_id])
         all_prediction_boxes.append(pred_boxes)
         confidence_scores.append(scores)
-
+    print("Done with images")
     precisions, recalls = get_precision_recall_curve(
         all_prediction_boxes, all_gt_boxes, confidence_scores, 0.5)
+    print("Values found")
     plot_precision_recall_curve(precisions, recalls)
+    print("Plotting done")
     mean_average_precision = calculate_mean_average_precision(precisions, recalls)
     print("Mean average precision: {:.4f}".format(mean_average_precision))
 
 
 if __name__ == "__main__":
     ground_truth_boxes = read_ground_truth_boxes()
+    print("Load ground")
     predicted_boxes = read_predicted_boxes()
+    print("Load pred")
     mean_average_precision(ground_truth_boxes, predicted_boxes)
+    print("Calculated")
