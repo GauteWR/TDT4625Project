@@ -1,0 +1,3 @@
+[submodule "SSD/ssd/data/MNIST-ObjectDetection"]
+	path = SSD/ssd/data/MNIST-ObjectDetection
+	url = git@github.com:hukkelas/MNIST-ObjectDetection.git
