@@ -2,6 +2,7 @@ import torch
 import torchvision
 from torch.optim.lr_scheduler import MultiStepLR, LinearLR
 from ssd.modeling import SSD300, SSDMultiboxLoss, backbones, AnchorBoxes
+from ssd.data import TDT4265Dataset
 from tops.config import LazyCall as L
 from ssd.data.mnist import MNISTDetectionDataset
 from ssd import utils
@@ -61,8 +62,8 @@ schedulers = dict(
 
 
 data_train = dict(
-    dataset=L(MNISTDetectionDataset)(
-        data_dir=get_dataset_dir("mnist_object_detection/train"),
+    dataset=L(TDT4265Dataset)(
+        data_dir=get_dataset_dir("tdt4265_updated/train"),
         is_train=True,
         transform=L(torchvision.transforms.Compose)(transforms=[
             L(ToTensor)(),  # ToTensor has to be applied before conversion to anchors.
@@ -80,8 +81,8 @@ data_train = dict(
     ])
 )
 data_val = dict(
-    dataset=L(MNISTDetectionDataset)(
-        data_dir=get_dataset_dir("MNIST-ObjectDetection/val"),
+    dataset=L(TDT4265Dataset)(
+        data_dir=get_dataset_dir("tdt4265_updated/val"),
         is_train=False,
         transform=L(torchvision.transforms.Compose)(transforms=[
             L(ToTensor)()

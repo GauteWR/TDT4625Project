@@ -26,6 +26,7 @@ def train_epoch(
     grad_scale = scaler.get_scale()
     for batch in tqdm.tqdm(dataloader_train, f"Epoch {logger.epoch()}"):
         print("Batch")
+        print(batch["image"].shape)
         batch = tops.to_cuda(batch)
         batch["labels"] = batch["labels"].long()
         batch = gpu_transform(batch)
@@ -67,7 +68,7 @@ def print_config(cfg):
 @click.argument("config_path", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option("--evaluate-only", default=False, is_flag=True, help="Only run evaluation, no training.")
 def train(config_path : Path, evaluate_only: bool):
-    config_path = "configs/ssd128x1024.py"
+    config_path = "configs/tdt4265.py"
     logger.logger.DEFAULT_SCALAR_LEVEL = logger.logger.DEBUG
     cfg = utils.load_config(config_path)
     print_config(cfg)
