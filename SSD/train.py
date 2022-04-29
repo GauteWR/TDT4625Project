@@ -64,7 +64,7 @@ def print_config(cfg):
 @click.option("--evaluate-only", default=False, is_flag=True, help="Only run evaluation, no training.")
 def train(config_path: Path, evaluate_only: bool):
     logger.logger.DEFAULT_SCALAR_LEVEL = logger.logger.DEBUG
-    cfg = utils.load_config(config_path)
+    cfg = utils.load_config("configs/ssd128x1024.py")
     print_config(cfg)
 
     tops.init(cfg.output_dir)
