@@ -82,13 +82,11 @@ class BasicModel(torch.nn.Module):
         where out_features[0] should have the shape:
             shape(-1, output_channels[0], 38, 38),
         """
-        print("foward 1")
         x = self.feature_extractor(x)
         out_features = [x]
         for layer in self.additional_layers.children():
             x = layer(x)
             out_features.append(x)
-        print("foward 2")
         for idx, feature in enumerate(out_features):
             out_channel = self.out_channels[idx]
             h, w = self.output_feature_shape[idx]

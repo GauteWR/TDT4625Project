@@ -5,7 +5,7 @@ from tops.config import LazyCall as L
 from ssd.data.transforms import (
     ToTensor, Normalize, Resize,
     GroundTruthBoxesToAnchors)
-from .ssd300 import train, anchors, optimizer, schedulers, backbone, model, data_train, data_val, loss_objective
+from .ssd128x1024 import train, anchors, optimizer, schedulers, backbone, model, data_train, data_val, loss_objective
 from .utils import get_dataset_dir
 
 # Keep the model, except change the backbone and number of classes
@@ -38,3 +38,5 @@ data_val.gpu_transform = gpu_transform
 data_train.gpu_transform = gpu_transform
 
 label_map = {idx: cls_name for idx, cls_name in enumerate(TDT4265Dataset.class_names)}
+
+

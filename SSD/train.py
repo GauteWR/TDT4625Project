@@ -22,19 +22,14 @@ def train_epoch(
         gpu_transform: torch.nn.Module,
         log_interval: int):
 
-    print("Train epoch called")
     grad_scale = scaler.get_scale()
     for batch in tqdm.tqdm(dataloader_train, f"Epoch {logger.epoch()}"):
-        print("Batch")
-        print(batch["image"].shape)
         batch = tops.to_cuda(batch)
         batch["labels"] = batch["labels"].long()
         batch = gpu_transform(batch)
-        print("Before forward")
         with torch.cuda.amp.autocast(enabled=tops.AMP()):
             bbox_delta, confs = model(batch["image"])
             loss, to_log = model.loss_func(bbox_delta, confs, batch["boxes"], batch["labels"])
-        print("Before backward")
         scaler.scale(loss).backward()
         scaler.step(optim)
         scaler.update()
@@ -109,12 +104,10 @@ def train(config_path : Path, evaluate_only: bool):
     dummy_input = tops.to_cuda(torch.randn(1, cfg.train.image_channels, *cfg.train.imshape))
     tops.print_module_summary(model, (dummy_input,))
     start_epoch = logger.epoch()
-    print("Start epoch completed")
     for epoch in range(start_epoch, cfg.train.epochs):
         print(epoch)
         start_epoch_time = time.time()
         train_epoch(model, scaler, optimizer, dataloader_train, scheduler, gpu_transform_train, cfg.train.log_interval)
-        print("After train epoch")
         end_epoch_time = time.time() - start_epoch_time
         total_time += end_epoch_time
         logger.add_scalar("stats/epoch_time", end_epoch_time)
