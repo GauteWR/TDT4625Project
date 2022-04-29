@@ -21,15 +21,19 @@ def train_epoch(
         optim, dataloader_train, scheduler,
         gpu_transform: torch.nn.Module,
         log_interval: int):
+
+    print("Train epoch called")
     grad_scale = scaler.get_scale()
     for batch in tqdm.tqdm(dataloader_train, f"Epoch {logger.epoch()}"):
+        print("Batch")
         batch = tops.to_cuda(batch)
         batch["labels"] = batch["labels"].long()
         batch = gpu_transform(batch)
-
+        print("Before forward")
         with torch.cuda.amp.autocast(enabled=tops.AMP()):
             bbox_delta, confs = model(batch["image"])
             loss, to_log = model.loss_func(bbox_delta, confs, batch["boxes"], batch["labels"])
+        print("Before backward")
         scaler.scale(loss).backward()
         scaler.step(optim)
         scaler.update()
@@ -62,9 +66,10 @@ def print_config(cfg):
 @click.command()
 @click.argument("config_path", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option("--evaluate-only", default=False, is_flag=True, help="Only run evaluation, no training.")
-def train(config_path: Path, evaluate_only: bool):
+def train(config_path : Path, evaluate_only: bool):
+    config_path = "configs/ssd128x1024.py"
     logger.logger.DEFAULT_SCALAR_LEVEL = logger.logger.DEBUG
-    cfg = utils.load_config("configs/ssd128x1024.py")
+    cfg = utils.load_config(config_path)
     print_config(cfg)
 
     tops.init(cfg.output_dir)
@@ -74,12 +79,14 @@ def train(config_path: Path, evaluate_only: bool):
     dataloader_val = instantiate(cfg.data_val.dataloader)
     cocoGt = dataloader_val.dataset.get_annotations_as_coco()
     model = tops.to_cuda(instantiate(cfg.model))
+    print("To cuda completed")
     optimizer = instantiate(cfg.optimizer, params=utils.tencent_trick(model))
     scheduler = ChainedScheduler(instantiate(list(cfg.schedulers.values()), optimizer=optimizer))
     checkpointer.register_models(
         dict(model=model, optimizer=optimizer, scheduler=scheduler))
     total_time = 0
     if checkpointer.has_checkpoint():
+        print("To checkpoint completed")
         train_state = checkpointer.load_registered_models(load_best=False)
         total_time = train_state["total_time"]
         logger.log(f"Resuming train from: epoch: {logger.epoch()}, global step: {logger.global_step()}")
@@ -101,9 +108,12 @@ def train(config_path: Path, evaluate_only: bool):
     dummy_input = tops.to_cuda(torch.randn(1, cfg.train.image_channels, *cfg.train.imshape))
     tops.print_module_summary(model, (dummy_input,))
     start_epoch = logger.epoch()
+    print("Start epoch completed")
     for epoch in range(start_epoch, cfg.train.epochs):
+        print(epoch)
         start_epoch_time = time.time()
         train_epoch(model, scaler, optimizer, dataloader_train, scheduler, gpu_transform_train, cfg.train.log_interval)
+        print("After train epoch")
         end_epoch_time = time.time() - start_epoch_time
         total_time += end_epoch_time
         logger.add_scalar("stats/epoch_time", end_epoch_time)

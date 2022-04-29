@@ -81,7 +81,7 @@ data_train = dict(
 )
 data_val = dict(
     dataset=L(MNISTDetectionDataset)(
-        data_dir=get_dataset_dir("mnist_object_detection/val"),
+        data_dir=get_dataset_dir("MNIST-ObjectDetection/val"),
         is_train=False,
         transform=L(torchvision.transforms.Compose)(transforms=[
             L(ToTensor)()
