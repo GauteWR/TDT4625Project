@@ -122,7 +122,7 @@ class SSDFocalLossBox(nn.Module):
         with torch.no_grad():
             to_log = - F.log_softmax(confs, dim=1)[:, 0]
         classification_loss = F.cross_entropy(confs, gt_labels, reduction="none")
-        classification_loss = focal_loss(classification_loss, gt_labels)
+        classification_loss = focal_loss(classification_loss, gt_labels, 9)
         pos_mask = (gt_labels > 0).unsqueeze(1).repeat(1, 4, 1)
         bbox_delta = bbox_delta[pos_mask]
         gt_locations = self._loc_vec(gt_bbox)
@@ -139,7 +139,12 @@ class SSDFocalLossBox(nn.Module):
 
 
 # Using gamma = 2 as it seems to be the most stable
-def focal_loss(loss, yk):
+def focal_loss(loss, labels, num_classes):
+    print(labels.shape)
+    yk = F.one_hot(labels, num_classes=num_classes).cpu()
+    print(yk.shape)
+    yk = yk.reshape((yk.shape[0], yk.shape[2], yk.shape[1]))
+    print(yk.shape)
     alpha = 0.25
     gamma = 2
     pt = torch.exp(-loss)
