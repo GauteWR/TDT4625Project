@@ -1,7 +1,7 @@
 import torch
 import torchvision
 from torch.optim.lr_scheduler import MultiStepLR, LinearLR
-from SSD.ssd.modeling.ssd_multibox_loss import SSDFocalLossBox
+from ssd.modeling.ssd_multibox_loss import SSDFocalLossBox
 from ssd.modeling import SSD300, SSDMultiboxLoss, backbones, AnchorBoxes
 from ssd.data import TDT4265Dataset
 from tops.config import LazyCall as L

@@ -2,6 +2,7 @@ import torch.nn as nn
 import torch
 import math
 import torch.nn.functional as F
+import numpy as np
 
 def hard_negative_mining(loss, labels, neg_pos_ratio):
     """
@@ -121,8 +122,7 @@ class SSDFocalLossBox(nn.Module):
         with torch.no_grad():
             to_log = - F.log_softmax(confs, dim=1)[:, 0]
         classification_loss = F.cross_entropy(confs, gt_labels, reduction="none")
-        classification_loss = focal_loss(classification_loss)
-        print(classification_loss.shape)
+        classification_loss = focal_loss(classification_loss, gt_labels)
         pos_mask = (gt_labels > 0).unsqueeze(1).repeat(1, 4, 1)
         bbox_delta = bbox_delta[pos_mask]
         gt_locations = self._loc_vec(gt_bbox)
@@ -139,9 +139,9 @@ class SSDFocalLossBox(nn.Module):
 
 
 # Using gamma = 2 as it seems to be the most stable
-def focal_loss(loss):
+def focal_loss(loss, yk):
     alpha = 0.25
     gamma = 2
     pt = torch.exp(-loss)
-    fc = alpha*(1-pt)**gamma * loss
-    return fc
+    fc = alpha*(1-pt)**gamma * yk * loss
+    return fc.mean()
