@@ -14,6 +14,8 @@ class PyramidModel(torch.nn.Module):
 
         print(image_channels)
 
+        # Implement RetinaNet
+
         self.feature_extractor = torch.nn.Sequential(
             torch.nn.Conv2d(image_channels, 64, kernel_size=3, padding=1),
             torch.nn.ReLU(),
@@ -23,7 +25,6 @@ class PyramidModel(torch.nn.Module):
             torch.nn.Conv2d(64, 128, kernel_size=3, padding=1),
             torch.nn.ReLU(),
             torch.nn.MaxPool2d(2,2), 
-            # 1, 128, 32 x 256 out
         )
 
         self.additional_layers = torch.nn.ModuleList([
