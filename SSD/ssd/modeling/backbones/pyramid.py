@@ -46,13 +46,7 @@ class PyramidModel(torch.nn.Module):
                 torch.nn.ReLU(),
             ),
         ])
-        def init_weights(layer):
-            if isinstance(layer, torch.nn.Conv2d):
-                torch.nn.init.normal_(layer.weight, 0, 0.01)
-                layer.bias.data.fill_(0)
-                
-        self.additional_layers.apply(init_weights)
-
+    
     def forward(self, x):
         #print(x.shape)
         x = self.resnet.conv1(x)

@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from .anchor_encoder import AnchorEncoder
 from torchvision.ops import batched_nms
+import numpy as np
 
 
 class SSD300(nn.Module):
@@ -32,11 +33,37 @@ class SSD300(nn.Module):
         self.anchor_encoder = AnchorEncoder(anchors)
         self._init_weights()
 
+    '''
+    def init_weights(layer):
+            if isinstance(layer, torch.nn.Conv2d):
+                torch.nn.init.normal_(layer.weight, 0, 0.01)
+                layer.bias.data.fill_(0)
+                
+        self.additional_layers.apply(init_weights)
+
+    '''
     def _init_weights(self):
-        layers = [*self.regression_heads, *self.classification_heads]
-        for layer in layers:
+        
+        for layer in self.regression_heads:
+            layer.bias.data.fill_(0)
             for param in layer.parameters():
-                if param.dim() > 1: nn.init.xavier_uniform_(param)
+                if param.dim() > 1:
+                    nn.init.xavier_uniform_(param)
+        
+
+        for layer in self.classification_heads:
+            layer.bias.data.fill_(0)
+            nn.init.normal_(layer.weight, 0, 0.01)
+
+        #pi is average amount of anchor boxes that will hit foreground
+        #pi = 0.01
+        #-torch.log((1-pi)/pi
+        #p is the opposite of pi pretty much, amount of background. k is just numclasses-1
+        #0 0 0 0 0 0  1 1 1 1 1 format på data
+        #configs/task2.3.3.py
+        p = 0.995
+        print("WEEEEEEE", self.classification_heads[-1].bias.data.shape)
+        self.classification_heads[-1].bias.data[:len(self.classification_heads[-1].bias)//9], np.log(p*(self.num_classes - 1)/(1-p))
 
     def regress_boxes(self, features):
         locations = []
