@@ -14,7 +14,7 @@ class PyramidModel(torch.nn.Module):
         self.out_channels = output_channels
         self.output_feature_shape = output_feature_sizes
 
-        self.m = torchvision.ops.FeaturePyramidNetwork([1024, 512, 512, 128, 128], 1024)
+        self.m = torchvision.ops.FeaturePyramidNetwork([64, 128, 256, 512, 512, 1024], 256)
 
         # Implement RetinaNet
 
@@ -22,39 +22,25 @@ class PyramidModel(torch.nn.Module):
 
         self.additional_layers = torch.nn.ModuleList([
             torch.nn.Sequential( 
-                torch.nn.Conv2d(output_channels[0], 2048, kernel_size=3, padding=1),
+                torch.nn.Conv2d(512, 512, kernel_size=3, padding=1),
                 torch.nn.ReLU(),
-                torch.nn.Conv2d(2048, output_channels[1], kernel_size=3, padding=1, stride=2),
-                torch.nn.ReLU(),
-            ),
-            torch.nn.Sequential( 
-                torch.nn.Conv2d(output_channels[1], 512, kernel_size=3, padding=1),
-                torch.nn.ReLU(),
-                torch.nn.Conv2d(512, output_channels[2], kernel_size=3, padding=1, stride=2),
-                torch.nn.ReLU(),
-            ),
-            torch.nn.Sequential(
-                torch.nn.Conv2d(output_channels[2], 512, kernel_size=3, padding=1),
-                torch.nn.ReLU(),
-                torch.nn.Conv2d(512, output_channels[3], kernel_size=3, padding=1, stride=2),
+                torch.nn.Conv2d(512, 512, kernel_size=3, padding=1, stride=2),
                 torch.nn.ReLU(),
             ),
             torch.nn.Sequential( 
-                torch.nn.Conv2d(output_channels[3], 128, kernel_size=3, padding=1),
+                torch.nn.Conv2d(512, 1024, kernel_size=3, padding=1),
                 torch.nn.ReLU(),
-                torch.nn.Conv2d(128, output_channels[4], kernel_size=3, stride=2, padding=1),
+                torch.nn.Conv2d(1024, 1024 , kernel_size=3, padding=1, stride=2),
                 torch.nn.ReLU(),
             ),
         ])
     
     def forward(self, x):
-        #print(x.shape)
         x = self.resnet.conv1(x)
         x = self.resnet.bn1(x)
         x = self.resnet.relu(x)
         x = self.resnet.maxpool(x)
         x1 = x
-        #print(x1.shape)
         for layer in self.resnet.layer1:
             x1 = layer(x1)
         x2 = x1
@@ -71,21 +57,27 @@ class PyramidModel(torch.nn.Module):
             x4 = layer(x4)
         x5 = x4
         #print(x5.shape)
-        out_features = [x4]
+        out_features = [x1, x2, x3, x4]
+        #print("Done with resnet")
         for i, layer in enumerate(self.additional_layers.children()):
             x5 = layer(x5)
-            # if i == len(self.additional_layers)-1:
             out_features.append(x5)
-            # print(x5.shape)
-        # print(len(out_features))
-        # out_feat = dict(out_features)
+            #print(x5.shape)
+
+        
+        """for layer in self.m.children():
+            print(layer)"""
+
         m_dict = {
-            "tensor1": out_features[len(out_features)-1],
+            "tensor1": out_features[0],
+            "tensor2": out_features[1],
+            "tensor3": out_features[2],
+            "tensor4": out_features[3],
+            "tensor5": out_features[4],
+            "tensor6": out_features[5],
         }
-        x6 = self.m.forward(m_dict)
-        x6 = x6['tensor1'].to('cuda')
-        out_features.append(x6)
-        # print(x6['tensor1'].shape)
+        out_features = self.m.forward(m_dict)
+        out_features = list(out_features.values())
         for idx, feature in enumerate(out_features):
             out_channel = self.out_channels[idx]
             h, w = self.output_feature_shape[idx]
