@@ -158,9 +158,9 @@ def focal_loss(softmax, labels, num_classes):
     yk = yk.reshape((yk.shape[0], yk.shape[2], yk.shape[1]))
     #print(yk.shape, softmax.shape)
 
-    #alpha = torch.tensor([0.01, 1, 1, 1, 1, 1, 1, 1, 1]).view(1, -1, 1).cuda()
-    alpha = torch.tensor([10, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000]).view(1, -1, 1).cuda()
-    gamma = 0
+    alpha = torch.tensor([0.01, 1, 1, 1, 1, 1, 1, 1, 1]).view(1, -1, 1).cuda()
+    #alpha = torch.tensor([10, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000]).view(1, -1, 1).cuda()
+    gamma = 2
     
     fc = -alpha *(1-softmax)**gamma * yk * torch.log(softmax)
 
