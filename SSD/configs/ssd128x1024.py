@@ -1,6 +1,7 @@
 import torch
 import torchvision
 from torch.optim.lr_scheduler import MultiStepLR, LinearLR
+from ssd.modeling.ssd_multibox_loss import SSDFocalLossBox
 from ssd.modeling import SSD300, SSDMultiboxLoss, backbones, AnchorBoxes
 from ssd.data import TDT4265Dataset
 from tops.config import LazyCall as L
@@ -43,7 +44,7 @@ backbone = L(backbones.BasicModel)(
     output_feature_sizes="${anchors.feature_sizes}"
 )
 
-loss_objective = L(SSDMultiboxLoss)(anchors="${anchors}")
+loss_objective = L(SSDFocalLossBox)(anchors="${anchors}")
 
 model = L(SSD300)(
     feature_extractor="${backbone}",

@@ -2,7 +2,6 @@ import torch.nn as nn
 import torch
 import math
 import torch.nn.functional as F
-import numpy as np
 
 def hard_negative_mining(loss, labels, neg_pos_ratio):
     """
@@ -26,6 +25,7 @@ def hard_negative_mining(loss, labels, neg_pos_ratio):
     _, orders = indexes.sort(dim=1)
     neg_mask = orders < num_neg
     return pos_mask | neg_mask
+
 
 class SSDMultiboxLoss(nn.Module):
     """
@@ -81,6 +81,7 @@ class SSDMultiboxLoss(nn.Module):
             classification_loss=classification_loss/num_pos,
             total_loss=total_loss
         )
+        #print("Class", classification_loss/num_pos)
         return total_loss, to_log
 
 class SSDFocalLossBox(nn.Module):
@@ -119,17 +120,25 @@ class SSDFocalLossBox(nn.Module):
             gt_label = [batch_size, num_anchors]
         """
         gt_bbox = gt_bbox.transpose(1, 2).contiguous() # reshape to [batch_size, 4, num_anchors]
-        with torch.no_grad():
-            to_log = - F.log_softmax(confs, dim=1)[:, 0]
+        softmax = F.softmax(confs, dim=1)
+        to_log = - torch.log(softmax)
+        #configs/task2.2NoCrop.py
+
         classification_loss = F.cross_entropy(confs, gt_labels, reduction="none")
-        classification_loss = focal_loss(classification_loss, gt_labels, 9)
+        classification_loss = classification_loss.sum()
+
+        classification_loss2 = focal_loss(softmax, gt_labels, 9)
+
+        #print("LOSS:", classification_loss, "VS", classification_loss2)
+        #print("SHAPE:", classification_loss.shape, "VS", classification_loss2.shape)
         pos_mask = (gt_labels > 0).unsqueeze(1).repeat(1, 4, 1)
         bbox_delta = bbox_delta[pos_mask]
         gt_locations = self._loc_vec(gt_bbox)
         gt_locations = gt_locations[pos_mask]
         regression_loss = F.smooth_l1_loss(bbox_delta, gt_locations, reduction="sum")
         num_pos = gt_locations.shape[0]/4
-        total_loss = regression_loss/num_pos + classification_loss/num_pos
+        #print("Comparing losses:", classification_loss/num_pos, "vs", classification_loss2/num_pos)
+        total_loss = regression_loss/num_pos + classification_loss2/num_pos
         to_log = dict(
             regression_loss=regression_loss/num_pos,
             classification_loss=classification_loss/num_pos,
@@ -139,14 +148,23 @@ class SSDFocalLossBox(nn.Module):
 
 
 # Using gamma = 2 as it seems to be the most stable
-def focal_loss(loss, labels, num_classes):
-    print(labels.shape)
-    yk = F.one_hot(labels, num_classes=num_classes).cpu()
-    print(yk.shape)
+def focal_loss(softmax, labels, num_classes):
+    # alpha is weight for the class (pref 0.01 to 1)
+    # pk is the softmax output for class k
+    # y is ground truth one hot
+    #softmax = F.softmax(confs)
+    yk = F.one_hot(labels, num_classes=num_classes)
+    #print(yk.shape)
     yk = yk.reshape((yk.shape[0], yk.shape[2], yk.shape[1]))
-    print(yk.shape)
-    alpha = 0.25
-    gamma = 2
-    pt = torch.exp(-loss)
-    fc = alpha*(1-pt)**gamma * yk * loss
-    return fc.mean()
+    #print(yk.shape, softmax.shape)
+
+    #alpha = torch.tensor([0.01, 1, 1, 1, 1, 1, 1, 1, 1]).view(1, -1, 1).cuda()
+    alpha = torch.tensor([10, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000]).view(1, -1, 1).cuda()
+    gamma = 0
+    
+    fc = -alpha *(1-softmax)**gamma * yk * torch.log(softmax)
+
+    summed = fc.sum()
+    #print("summed", summed.shape, summed)
+    return summed
+    #configs/task2.2NoCrop.py
