@@ -31,18 +31,15 @@ class SSD300(nn.Module):
         self.regression_heads = nn.ModuleList(self.regression_heads)
         self.classification_heads = nn.ModuleList(self.classification_heads)
         self.anchor_encoder = AnchorEncoder(anchors)
-        self._init_weights()
+        self._init_weights_improved()
 
-    '''
-    def init_weights(layer):
-            if isinstance(layer, torch.nn.Conv2d):
-                torch.nn.init.normal_(layer.weight, 0, 0.01)
-                layer.bias.data.fill_(0)
-                
-        self.additional_layers.apply(init_weights)
-
-    '''
     def _init_weights(self):
+        layers = [*self.regression_heads, *self.classification_heads]
+        for layer in layers:
+            for param in layer.parameters():
+                if param.dim() > 1: nn.init.xavier_uniform_(param)
+
+    def _init_weights_improved(self):
         
         for layer in self.regression_heads:
             layer.bias.data.fill_(0)
