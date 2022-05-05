@@ -1,7 +1,7 @@
 import torch
 from typing import Tuple, List
 import torchvision.models as models
-import torchvision.ops.feature_pyramid_network as fpn
+import torchvision
 
 
 class PyramidModel(torch.nn.Module):
@@ -69,12 +69,18 @@ class PyramidModel(torch.nn.Module):
         x4 = x3
         for layer in self.resnet.layer4:
             x4 = layer(x4)
-        feature_layers = [x1, x2, x3, x4]
-        out_features = [x4]
         x5 = x4
-        for layer in self.additional_layers.children():
+        print("Done with resnet")
+        out_features = [x, x1, x2, x3, x4]
+        for i, layer in enumerate(self.additional_layers.children()):
             x5 = layer(x5)
-            out_features.append(x5)
+            if i == len(self.additional_layers)-1:
+                out_features.append(x5)
+            print(x5.shape)
+        print(len(out_features))
+        
+        self.m = torchvision.ops.FeaturePyramidNetwork(dict(out_features), [64, 128, 256, 512, 1024])
+        
         for idx, feature in enumerate(out_features):
             out_channel = self.out_channels[idx]
             h, w = self.output_feature_shape[idx]
