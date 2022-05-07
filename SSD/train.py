@@ -21,12 +21,12 @@ def train_epoch(
         optim, dataloader_train, scheduler,
         gpu_transform: torch.nn.Module,
         log_interval: int):
+
     grad_scale = scaler.get_scale()
     for batch in tqdm.tqdm(dataloader_train, f"Epoch {logger.epoch()}"):
         batch = tops.to_cuda(batch)
         batch["labels"] = batch["labels"].long()
         batch = gpu_transform(batch)
-
         with torch.cuda.amp.autocast(enabled=tops.AMP()):
             bbox_delta, confs = model(batch["image"])
             loss, to_log = model.loss_func(bbox_delta, confs, batch["boxes"], batch["labels"])
@@ -60,9 +60,9 @@ def print_config(cfg):
 
 
 @click.command()
-@click.argument("config_path", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option("--evaluate-only", default=False, is_flag=True, help="Only run evaluation, no training.")
-def train(config_path: Path, evaluate_only: bool):
+def train(evaluate_only: bool):
+    config_path = str(input("Enter config path:"))
     logger.logger.DEFAULT_SCALAR_LEVEL = logger.logger.DEBUG
     cfg = utils.load_config(config_path)
     print_config(cfg)

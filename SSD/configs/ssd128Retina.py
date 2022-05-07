@@ -2,6 +2,7 @@ import torch
 import torchvision
 from torch.optim.lr_scheduler import MultiStepLR, LinearLR
 from ssd.modeling.ssd_multibox_loss import SSDFocalLossBox
+from ssd.modeling.backbones import pyramid
 from ssd.modeling import SSD300, SSDMultiboxLoss, backbones, AnchorBoxes
 from ssd.data import TDT4265Dataset
 from tops.config import LazyCall as L
@@ -11,6 +12,7 @@ from ssd.data.transforms import Normalize, ToTensor, GroundTruthBoxesToAnchors
 from .utils import get_dataset_dir, get_output_dir
 import random
 
+# This is the 2.3.1 config, using the fpn backbone 
 
 train = dict(
     batch_size=32,
@@ -28,7 +30,6 @@ anchors = L(AnchorBoxes)(
     # Strides is the number of pixels (in image space) between each spatial position in the feature map
     strides=[[4, 4], [8, 8], [16, 16], [32, 32], [64, 64], [128, 128]],
     min_sizes=[[16, 16], [32, 32], [48, 48], [64, 64], [86, 86], [128, 128], [128, 400]],
-    # aspect ratio is defined per feature map (first index is largest feature map (38x38))
     # aspect ratio is used to define two boxes per element in the list.
     # if ratio=[2], boxes will be created with ratio 1:2 and 2:1
     # Number of boxes per location is in total 2 + 2 per aspect ratio
@@ -38,8 +39,8 @@ anchors = L(AnchorBoxes)(
     scale_size_variance=0.2
 )
 
-backbone = L(backbones.BasicModel)(
-    output_channels=[128, 256, 128, 128, 64, 64],
+backbone = L(pyramid.PyramidModel)(
+    output_channels=[256]*6,
     image_channels="${train.image_channels}",
     output_feature_sizes="${anchors.feature_sizes}"
 )
