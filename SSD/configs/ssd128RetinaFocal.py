@@ -4,7 +4,7 @@ from torch.optim.lr_scheduler import MultiStepLR, LinearLR
 from ssd.modeling.ssd import SSD300ImpW
 from ssd.modeling.ssd_multibox_loss import SSDFocalLossBox
 from ssd.modeling.backbones import pyramid
-from ssd.modeling import SSD300, SSDMultiboxLoss, backbones, AnchorBoxes, SSD300ImpW
+from ssd.modeling import SSD300, SSDMultiboxLoss, backbones, AnchorBoxes
 from ssd.data import TDT4265Dataset
 from tops.config import LazyCall as L
 from ssd.data.mnist import MNISTDetectionDataset
@@ -12,6 +12,8 @@ from ssd import utils
 from ssd.data.transforms import Normalize, ToTensor, GroundTruthBoxesToAnchors
 from .utils import get_dataset_dir, get_output_dir
 import random
+
+# This is the 2.3.2 config, using focal loss, improved weights and fpn
 
 
 train = dict(

@@ -12,6 +12,7 @@ from ssd.data.transforms import Normalize, ToTensor, GroundTruthBoxesToAnchors
 from .utils import get_dataset_dir, get_output_dir
 import random
 
+# This is the 2.3.1 config, using the fpn backbone 
 
 train = dict(
     batch_size=32,

@@ -1,10 +1,10 @@
 import torch
 import torchvision
 from torch.optim.lr_scheduler import MultiStepLR, LinearLR
-from ssd.modeling.ssd import SSD300ImpW
+from ssd.modeling.ssd2 import SSD300
 from ssd.modeling.ssd_multibox_loss import SSDFocalLossBox
 from ssd.modeling.backbones import pyramid
-from ssd.modeling import SSD300, SSDMultiboxLoss, backbones, AnchorBoxes
+from ssd.modeling import SSDMultiboxLoss, backbones, AnchorBoxes
 from ssd.data import TDT4265Dataset
 from tops.config import LazyCall as L
 from ssd.data.mnist import MNISTDetectionDataset
@@ -13,7 +13,8 @@ from ssd.data.transforms import Normalize, ToTensor, GroundTruthBoxesToAnchors
 from .utils import get_dataset_dir, get_output_dir
 import random
 
-# This is the 2.3.4 config. Using FPN and the improved weights, not focal loss.
+# This is the 2.3.2 config, using focal loss, improved weights and fpn
+
 
 train = dict(
     batch_size=32,
@@ -34,7 +35,7 @@ anchors = L(AnchorBoxes)(
     # aspect ratio is used to define two boxes per element in the list.
     # if ratio=[2], boxes will be created with ratio 1:2 and 2:1
     # Number of boxes per location is in total 2 + 2 per aspect ratio
-    aspect_ratios=[[2, 3], [2, 3], [2, 3], [2, 3], [2], [2]],
+    aspect_ratios=[[2, 3], [2, 3], [2, 3], [2, 3], [2, 3], [2, 3]],
     image_shape="${train.imshape}",
     scale_center_variance=0.1,
     scale_size_variance=0.2
@@ -46,9 +47,9 @@ backbone = L(pyramid.PyramidModel)(
     output_feature_sizes="${anchors.feature_sizes}"
 )
 
-loss_objective = L(SSDMultiboxLoss)(anchors="${anchors}")
+loss_objective = L(SSDFocalLossBox)(anchors="${anchors}")
 
-model = L(SSD300ImpW)(
+model = L(SSD300)(
     feature_extractor="${backbone}",
     anchors="${anchors}",
     loss_objective="${loss_objective}",
