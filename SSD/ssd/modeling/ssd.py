@@ -59,7 +59,6 @@ class SSD300(nn.Module):
         #0 0 0 0 0 0  1 1 1 1 1 format på data
         #configs/task2.3.3.py
         p = 0.995
-        print("WEEEEEEE", self.classification_heads[-1].bias.data.shape)
         self.classification_heads[-1].bias.data[:len(self.classification_heads[-1].bias)//9], np.log(p*(self.num_classes - 1)/(1-p))
 
     def regress_boxes(self, features):
