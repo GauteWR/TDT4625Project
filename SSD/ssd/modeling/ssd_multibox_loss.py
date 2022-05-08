@@ -166,7 +166,4 @@ def focal_loss(softmax, labels, num_classes):
     
     fc = -alpha *(1-softmax)**gamma * yk * torch.log(softmax)
 
-    summed = fc.sum()
-    #print("summed", summed.shape, summed)
-    return summed
-    #configs/task2.2NoCrop.py
+    return fc.sum()

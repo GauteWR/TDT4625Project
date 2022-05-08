@@ -53,7 +53,7 @@ model = L(SSD300)(
     feature_extractor="${backbone}",
     anchors="${anchors}",
     loss_objective="${loss_objective}",
-    num_classes=10 + 1  # Add 1 for background
+    num_classes=8 + 1  # Add 1 for background
 )
 
 optimizer = L(torch.optim.SGD)(

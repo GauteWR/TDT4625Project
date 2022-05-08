@@ -47,7 +47,6 @@ class SSD300(nn.Module):
             self.regression_heads.append(
                 nn.Sequential(
                     nn.Conv2d(out_ch, n_boxes * 4, kernel_size=3, padding=1),
-                    nn.ReLU()
                 )
             )
             self.classification_heads.append(
@@ -71,7 +70,6 @@ class SSD300(nn.Module):
             self.classification_heads.append(
                 nn.Sequential(
                     nn.Conv2d(out_ch, n_boxes * self.num_classes, kernel_size=3, padding=1),
-                    nn.ReLU()
                 )
             )
 
